@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Ebay Price Tool</title>
+
+	<style type="text/css">
+		table {
+			width: 100%;
+		}
+
+		td {
+			width: 20%;
+			text-align: center;
+		}
+
+		#tableOne {
+			background-color: purple;
+			color: white;
+		}
+
+		.dropbtn {
+			background-color: #3498DB;
+			color: white;
+			padding: 16px;
+			font-size: 16px;
+			border: none;
+			cursor: pointer;
+		}
+
+		/* Dropdown button on hover & focus */
+
+		.dropbtn:hover,
+		.dropbtn:focus {
+			background-color: #2980B9;
+		}
+
+		/* The container <div> - needed to position the dropdown content */
+
+		.dropdown {
+			position: relative;
+			display: inline-block;
+		}
+
+		/* Dropdown Content (Hidden by Default) */
+
+		.dropdown-content {
+			display: none;
+			position: absolute;
+			background-color: #f1f1f1;
+			min-width: 160px;
+			box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+			z-index: 1;
+		}
+
+		/* Links inside the dropdown */
+
+		.dropdown-content li {
+			color: black;
+			padding: 12px 16px;
+			text-decoration: none;
+			display: block;
+		}
+
+		/* Change color of dropdown links on hover */
+
+		.dropdown-content li:hover {
+			background-color: #ddd
+		}
+
+		.show {
+			display: block;
+		}
+
+		#chartContainer {
+			position: relative;
+			width: 95vw;
+			margin: auto;
+		}
+	</style>
+
+</head>
+
+<header>
+	Keywords:
+	<textarea></textarea>
+
+	<div class="dropdown">
+		<button onclick="myFunction()" class="dropbtn" id="dropdownButton">Dropdown</button>
+		<div id="myDropdown" class="dropdown-content">
+			<ul>
+				<li value=11450 data-name="Clothing, Shoes and Accessories">Clothing, Shoes and Accessories</li>
+				<li value=15724>Women's Clothing</li>
+				<li value=169291>Women's Bags and Handbags</li>
+				<li value=3034>Women's Shoes</li>
+				<li value=4251>Women's Accessories</li>
+				<li value=63862>Coats and Jackets</li>
+				<li value=63861>Dresses</li>
+				<li value=11554>Jeans</li>
+				<li value=3009>Jumpsuits and Rompers</li>
+				<li value=169001>Leggings</li>
+				<li value=63863>Pants</li>
+				<li value=11555>Shorts</li>
+				<li value=63864>Skirts</li>
+				<li value=63865>Suits and Blazers</li>
+				<li value=63866>Sweaters</li>
+				<li value=63867>Swimwear</li>
+				<li value=63869>Tees</li>
+				<li value=53159>Tops and Blouses</li>
+				<li value=1059>Men's Clothing</li>
+				<li value=93427>Men's Shoes</li>
+				<li value=4250>Men's Accessories</li>
+				<li value=57988>Coats and Jackets</li>
+				<li value=57989>Pants</li>
+				<li value=57991>Dress Shirts</li>
+				<li value=57990>Casual Shirts</li>
+				<li value=15687>Tees</li>
+				<li value=3002>Blazers and Sports Coats</li>
+				<li value=3001>Suits</li>
+			</ul>
+		</div>
+	</div>
+
+	<button id="serchButton">Search</button>
+
+</header>
+
+<body>
+
+	<table id="tableOne" class="table">
+		<thead>
+			<tr>
+				<th># of Results</th>
+				<th>Range</th>
+				<th>Mean</th>
+				<th>Median</th>
+				<th>Mode</th>
+				<th>Rounded Mode</th>
+			</tr>
+		</thead>
+		<tbody id="pricingTable">
+			<!-- Insert movie rows here -->
+		</tbody>
+	</table>
+
+	<div class="chart-container" id="chartContainer">
+		<canvas id="myChart"></canvas>
+	</div>
+
+	<table class="table">
+		<thead>
+			<tr>
+				<th>Picture</th>
+				<th>Item</th>
+				<th>Price</th>
+				<th>Shipping</th>
+				<th>Totall</th>
+			</tr>
+		</thead>
+		<tbody id="itemsTable">
+			<!-- Insert movie rows here -->
+		</tbody>
+	</table>
+
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
+	<script type="text/javascript">
+
+		var item = "anthropologie";
+		var category = "63861";
+		var highest = 0;
+		var lowest = 100000;
+		var totals = [];
+		var totalsRound = [];
+		var Shipping = "";
+		var totalNumber = "";
+		var runningTally = 0;
+		var queryURL = "";
+		var body = $("#itemsTable");
+		var head = $("#pricingTable");
+		var freq;
+		var freqVal;
+		var p = 1;
+		var result = {};
+
+		function myFunction() {
+			document.getElementById("myDropdown").classList.toggle("show");
+		}
+
+		// Close the dropdown menu if the user clicks outside of it
+		window.onclick = function (event) {
+			if (!event.target.matches('.dropbtn')) {
+
+				var dropdowns = document.getElementsByClassName("dropdown-content");
+				var i;
+				for (i = 0; i < dropdowns.length; i++) {
+					var openDropdown = dropdowns[i];
+					if (openDropdown.classList.contains('show')) {
+						openDropdown.classList.remove('show');
+					}
+				}
+			}
+		};
+
+		$(".dropdown ul li").on("click", function () {
+			console.log("Dropdown clicked");
+			category = $(this).val();
+			console.log(category);
+			$("#dropdownButton").text($(this).text());
+		});
+
+		$("#serchButton").on("click", function () {
+			console.log("search clicked");
+			highest = 0;
+			lowest = 100000;
+			totals = [];
+			totalsRound = [];
+			runningTally = 0;
+			head.empty();
+			body.empty();
+			item = encodeURIComponent($("textarea").val());
+			console.log(item);
+			getData();
+		});
+
+
+		function modes(array) {
+			if (!array.length) return [];
+			var modeMap = {},
+				maxCount = 0,
+				modes = [];
+
+			array.forEach(function (val) {
+				if (!modeMap[val]) modeMap[val] = 1;
+				else modeMap[val]++;
+
+				if (modeMap[val] > maxCount) {
+					modes = [val];
+					maxCount = modeMap[val];
+				}
+				else if (modeMap[val] === maxCount) {
+					modes.push(val);
+					maxCount = modeMap[val];
+				}
+			});
+			return modes;
+		}
+
+		function getData() {
+			queryURL = "https://crossorigin.me/https://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findCompletedItems&SERVICE-VERSION=1.7.0&SECURITY-APPNAME=MaureenB-Improved-PRD-a5d7504c4-a5fecda0&RESPONSE-DATA-FORMAT=JSON&REST-PAYLOAD&keywords=" + item + "&itemFilter(0).name=SoldItemsOnly&itemFilter(0).value=true&itemFilter(1).name=Condition&itemFilter(1).value=3000&itemFilter(2).name=MinPrice&itemFilter(2).value=10&paginationInput.pageNumber=" + p + "&categoryId=" + category;
+
+			console.log(queryURL);
+			console.log(category);
+			console.log(item);
+			$.ajax({
+				url: queryURL,
+				method: "GET"
+			}).then(function (response) {
+				result = JSON.parse(response);
+				//   console.log(result);
+				//   console.log(result.findCompletedItemsResponse[0].searchResult[0].item.length);
+
+				for (var i = 0; i < result.findCompletedItemsResponse[0].searchResult[0].item.length; i++) {
+
+					var newRow = $("<tr>");
+					var picture = $("<td>").html("<img src=" + result.findCompletedItemsResponse[0].searchResult[0].item[i].galleryURL + "alt='img'>");
+					var Title = $("<td>").text(result.findCompletedItemsResponse[0].searchResult[0].item[i].title);
+					var Price = $("<td>").text(result.findCompletedItemsResponse[0].searchResult[0].item[i].sellingStatus[0].currentPrice[0].__value__);
+
+					newRow.append(picture);
+					newRow.append(Title);
+					newRow.append(Price);
+
+					if (result.findCompletedItemsResponse[0].searchResult[0].item[i].shippingInfo[0].hasOwnProperty('shippingServiceCost')) {
+
+						Shipping = $("<td>").text(result.findCompletedItemsResponse[0].searchResult[0].item[i].shippingInfo[0].shippingServiceCost[0].__value__);
+
+						totalNumber = Number(result.findCompletedItemsResponse[0].searchResult[0].item[i].sellingStatus[0].currentPrice[0].__value__) + Number(result.findCompletedItemsResponse[0].searchResult[0].item[i].shippingInfo[0].shippingServiceCost[0].__value__);
+					}
+					else {
+
+						Shipping = $("<td>").text("$0.00");
+
+						totalNumber = Number(result.findCompletedItemsResponse[0].searchResult[0].item[i].sellingStatus[0].currentPrice[0].__value__) + 0;
+					}
+
+					var total = $("<td>").text(totalNumber.toFixed(2));
+
+					newRow.append(Shipping);
+					newRow.append(total);
+					body.append(newRow);
+
+					if (totalNumber.toFixed(2) > Number(highest)) {
+						console.log(highest);
+						console.log(totalNumber);
+						highest = totalNumber.toFixed(2);
+						console.log("New high price: " + totalNumber.toFixed(2));
+					}
+
+					if (totalNumber.toFixed(2) < Number(lowest)) {
+						console.log(lowest);
+						console.log(totalNumber);
+						lowest = totalNumber.toFixed(2);
+						console.log("New low price: " + totalNumber.toFixed(2));
+					}
+
+					totals.push(totalNumber);
+					totalsRound.push(Math.round(totalNumber));
+					//   console.log(totalNumber);
+					runningTally += totalNumber;
+					//   console.log(runningTally.toFixed(2));
+				}
+
+				console.log(totals);
+				console.log(totalsRound);
+				totals.sort(function (a, b) { return a - b });
+				totalsRound.sort(function (a, b) { return a - b });
+				console.log(totals);
+				console.log(totalsRound);
+
+				createFreq(totalsRound);
+
+				var lowMiddle = Math.floor((totals.length - 1) / 2);
+				console.log("lowMiddle " + lowMiddle);
+				var highMiddle = Math.ceil((totals.length - 1) / 2);
+				console.log("highMiddle " + highMiddle);
+				var mean = runningTally.toFixed(2) / result.findCompletedItemsResponse[0].searchResult[0].item.length;
+				console.log("mean " + mean);
+				var median = (totals[lowMiddle] + totals[highMiddle]) / 2;
+				console.log("median " + median);
+
+
+				var importantRow = $("<tr>");
+
+				var priceRange = $("<td>").text(lowest + "-" + highest);
+				var meanPrice = $("<td>").text(mean.toFixed(2));
+				var medianPrice = $("<td>").text(median.toFixed(2));
+				var modePrice = $("<td>").text(modes(totals));
+				var roundedMode = $("<td>").text(modes(totalsRound));
+				var numberOfItems = $("<td>").text(result.findCompletedItemsResponse[0].searchResult[0].item.length);
+
+				importantRow.append(numberOfItems);
+				importantRow.append(priceRange);
+				importantRow.append(meanPrice);
+				importantRow.append(medianPrice);
+				importantRow.append(modePrice);
+				importantRow.append(roundedMode);
+				head.append(importantRow);
+
+				function createFreq(arry) {
+					var a = [], b = [], prev;
+					console.log(arry);
+
+					for (var i = 0; i < arry.length; i++) {
+						if (arry[i] !== prev) {
+							a.push(arry[i]);
+							b.push(1);
+						} else {
+							b[b.length - 1]++;
+						}
+						prev = arry[i];
+					}
+
+					freq = a;
+					freqVal = b;
+				}
+
+				var ctx = document.getElementById("myChart");
+				var myChart = new Chart(ctx, {
+					type: 'horizontalBar',
+					data: {
+						labels: freq,
+						datasets: [{
+							label: '# Sold',
+							data: freqVal,
+							backgroundColor: 'rgba(128, 0, 128, 0.2)',
+							borderColor: 'purple',
+							borderWidth: 1
+						}]
+					},
+					options: {
+						scales: {
+							yAxes: [{
+								ticks: {
+									beginAtZero: true
+								}
+							}]
+						}
+					}
+
+				});
+			});
+		}
+
+		getData();
+
+
+	</script>
+</body>
+
+</html>
